@@ -35,15 +35,15 @@ import matplotlib.pyplot as plt
 
 # This is a bit of magic to make matplotlib figures appear inline in the notebook
 # rather than in a new window.
-#get_ipython().magic(u'matplotlib inline')
-#plt.rcParams['figure.figsize'] = (10.0, 8.0) # set default size of plots
-#plt.rcParams['image.interpolation'] = 'nearest'
-#plt.rcParams['image.cmap'] = 'gray'
+# get_ipython().magic(u'matplotlib inline')
+# plt.rcParams['figure.figsize'] = (10.0, 8.0) # set default size of plots
+# plt.rcParams['image.interpolation'] = 'nearest'
+# plt.rcParams['image.cmap'] = 'gray'
 
 # Some more magic so that the notebook will reload external python modules;
 # see http://stackoverflow.com/questions/1907993/autoreload-of-modules-in-ipython
-#get_ipython().magic(u'load_ext autoreload')
-#get_ipython().magic(u'autoreload 2')
+# get_ipython().magic(u'load_ext autoreload')
+# get_ipython().magic(u'autoreload 2')
 
 
 # ## 1. Softmax
@@ -63,8 +63,8 @@ import matplotlib.pyplot as plt
 
 def softmaxactual(x): 
     maxX = x.max()
-    exp = np.exp(x-maxX)
-    return exp/sum(exp)
+    exp = np.exp(x - maxX)
+    return exp / sum(exp)
 def softmax(x):
     """ Softmax function """
     ###################################################################
@@ -80,7 +80,7 @@ def softmax(x):
     # it helpful for your later problems.                             #
     ###################################################################
     
-    return map(softmaxactual,x)
+    return map(softmaxactual, x)
 
 
 # In[6]:
@@ -88,8 +88,8 @@ def softmax(x):
 # Verify your softmax implementation
 
 print "=== For autograder ==="
-print softmax(np.array([[1001,1002],[3,4]]))
-print softmax(np.array([[-1001,-1002]]))
+print softmax(np.array([[1001, 1002], [3, 4]]))
+print softmax(np.array([[-1001, -1002]]))
 
 
 # ## 2. Neural network basics
@@ -112,7 +112,7 @@ def sigmoid(x):
     # Compute the sigmoid function for the input here.                #
     ###################################################################
     
-    return 1./ (1. +np.exp(-x))
+    return 1. / (1. + np.exp(-x))
     
     
 
@@ -124,11 +124,7 @@ def sigmoid_grad(f):
     # function value of your original input x.                        #
     ###################################################################
     
-    ### YOUR CODE HERE
-    return sigmoid(f)*(1.-sigmoid(f))
-    ### END YOUR CODE
-    
-
+    return sigmoid(f) * (1. - sigmoid(f))
 
 # In[18]:
 
@@ -155,7 +151,7 @@ def gradcheck_naive(f, x):
 
     rndstate = random.getstate()
     random.setstate(rndstate)  
-    fx, grad = f(x) # Evaluate function value at original point
+    fx, grad = f(x)  # Evaluate function value at original point
     h = 1e-4
 
     # Iterate over all indexes in x
@@ -163,17 +159,13 @@ def gradcheck_naive(f, x):
     while not it.finished:
         ix = it.multi_index
         random.setstate(rndstate)  
-        fxph,grad1 = f(x[ix]+h)
+        x[ix] += h
+        fxph, grad1 = f(x)
         random.setstate(rndstate)  
-        fxmh,grad2 = f(x[ix]-h)
-        ### YOUR CODE HERE: try modifying x[ix] with h defined above to compute numerical gradients
-        ### make sure you call random.setstate(rndstate) before calling f(x) each time, this will make it 
-        ### possible to test cost functions with built in randomness later
-    
-        return (fxph - fxmh)/h
-    
-        ### END YOUR CODE
-
+        x[ix] -= 2*h
+        fxmh, grad2 = f(x)
+        numgrad = (fxph-fxmh) / (2.0 * h)
+        x[ix] += h
         # Compare gradients
         reldiff = abs(numgrad - grad[ix]) / max(1, abs(numgrad), abs(grad[ix]))
         if reldiff > 1e-5:
@@ -182,7 +174,7 @@ def gradcheck_naive(f, x):
             print "Your gradient: %f \t Numerical gradient: %f" % (grad[ix], numgrad)
             return
     
-        it.iternext() # Step to next dimension
+        it.iternext()  # Step to next dimension
 
     print "Gradient check passed!"
 
@@ -193,69 +185,78 @@ def gradcheck_naive(f, x):
 quad = lambda x: (np.sum(x ** 2), x * 2)
 
 print "=== For autograder ==="
-gradcheck_naive(quad, np.array(123.456))      # scalar test
-gradcheck_naive(quad, np.random.randn(3,))    # 1-D test
-gradcheck_naive(quad, np.random.randn(4,5))   # 2-D test
+gradcheck_naive(quad, np.array(123.456))  # scalar test
+gradcheck_naive(quad, np.random.randn(3,))  # 1-D test
+gradcheck_naive(quad, np.random.randn(4, 5))  # 2-D test
 
 
 # In[ ]:
 
 # Set up fake data and parameters for the neural network
 N = 20
-dimensions = [10, 5, 10]
-data = np.random.randn(N, dimensions[0])   # each row will be a datum
+dimensions = [10, 5, 11]
+data = np.random.randn(N, dimensions[0])  # each row will be a datum
 labels = np.zeros((N, dimensions[2]))
 for i in xrange(N):
-    labels[i,random.randint(0,dimensions[2]-1)] = 1
+    labels[i, random.randint(0, dimensions[2] - 1)] = 1
 
-params = np.random.randn((dimensions[0] + 1) * dimensions[1] + (dimensions[1] + 1) * dimensions[2], )
+params = np.random.randn((dimensions[0] + 1) * dimensions[1] + (dimensions[1] + 1) * dimensions[2],)
 
 
 # In[ ]:
 
-def forward_backward_prop(data, labels, params):
+def forward_backward_prop(dataI, labels, params):
     """ Forward and backward propagation for a two-layer sigmoidal network """
     ###################################################################
     # Compute the forward propagation and for the cross entropy cost, #
     # and backward propagation for the gradients for all parameters.  #
     ###################################################################
     
-    ### Unpack network parameters (do not modify)
+    # ## Unpack network parameters (do not modify)
     t = 0
-    W1 = np.reshape(params[t:t+dimensions[0]*dimensions[1]], (dimensions[0], dimensions[1]))
-    t += dimensions[0]*dimensions[1]
-    b1 = np.reshape(params[t:t+dimensions[1]], (1, dimensions[1]))
+    W1 = np.reshape(params[t:t + dimensions[0] * dimensions[1]], (dimensions[0], dimensions[1]))
+    t += dimensions[0] * dimensions[1]
+    b1 = np.reshape(params[t:t + dimensions[1]], (1, dimensions[1]))
     t += dimensions[1]
-    W2 = np.reshape(params[t:t+dimensions[1]*dimensions[2]], (dimensions[1], dimensions[2]))
-    t += dimensions[1]*dimensions[2]
-    b2 = np.reshape(params[t:t+dimensions[2]], (1, dimensions[2]))
-    
-    ### YOUR CODE HERE: forward propagation
-    
-    
-   # cost = ...
-    
-    ### END YOUR CODE
-    
-    ### YOUR CODE HERE: backward propagation
+    W2 = np.reshape(params[t:t + dimensions[1] * dimensions[2]], (dimensions[1], dimensions[2]))
+    t += dimensions[1] * dimensions[2]
+    b2 = np.reshape(params[t:t + dimensions[2]], (1, dimensions[2]))
+    y0 = np.transpose(dataI) 
+    # ## YOUR CODE HERE: forward propagation
+    W1 = np.transpose(W1)
+    W2 = np.transpose(W2)
+    b1 = np.transpose(b1)
+    b2 = np.transpose(b2)
+    N =np.shape(y0)[1]
+    ones = np.ones((1,N))
+    labels = np.transpose(labels)
+    a1=np.dot(W1,y0 ) + np.dot(b1, ones)
+    y1 = sigmoid(a1)
+    a2=np.dot(W2,y1 ) + np.dot(b2, ones)
+    y2 = np.transpose(softmax(np.transpose(a2)))
+    d2 = y2-labels
+    d1=np.multiply(np.dot(np.transpose(W2), d2),sigmoid_grad(a1))
 
-    #gradW1 = ...
-    #gradb1 = ...
-    #gradW2 = ...
-    #gradb2 = ...
+    gradW2 = np.dot(d2, np.transpose(y1))/N
+    gradb2 = np.dot(d2, np.transpose(ones))/N
+    gradW1 = np.dot(d1, np.transpose(y0))/N
+    gradb1 = np.dot(d1, np.transpose(ones))/N
     
-    ### END YOUR CODE
+    cost = sum(sum(np.multiply(labels,-np.log(y2))))
     
-    ### Stack gradients (do not modify)
+    print cost
+    gradW2 = np.transpose(gradW2)
+    gradW1 = np.transpose(gradW1)
+    gradb2 = np.transpose(gradb2)
+    gradb1 = np.transpose(gradb1)
     grad = np.concatenate((gradW1.flatten(), gradb1.flatten(), gradW2.flatten(), gradb2.flatten()))
-    
     return cost, grad
 
 
 # In[ ]:
 
 # Perform gradcheck on your neural network
-print "=== For autograder ==="
+print "=== For autograder1 ==="
 gradcheck_naive(lambda params: forward_backward_prop(data, labels, params), params)
 
 
@@ -270,12 +271,12 @@ gradcheck_naive(lambda params: forward_backward_prop(data, labels, params), para
 # Implement your skip-gram and CBOW models here
 
 # Interface to the dataset for negative sampling
-dataset = type('dummy', (), {})()
+'''dataset = type('dummy', (), {})()
 def dummySampleTokenIdx():
     return random.randint(0, 4)
 def getRandomContext(C):
     tokens = ["a", "b", "c", "d", "e"]
-    return tokens[random.randint(0,4)], [tokens[random.randint(0,4)] for i in xrange(2*C)]
+    return tokens[random.randint(0, 4)], [tokens[random.randint(0, 4)] for i in xrange(2 * C)]
 dataset.sampleTokenIdx = dummySampleTokenIdx
 dataset.getRandomContext = getRandomContext
 
@@ -302,9 +303,9 @@ def softmaxCostAndGradient(predicted, target, outputVectors):
     # assignment!                                                     #
     ###################################################################
     
-    ### YOUR CODE HERE
+    # ## YOUR CODE HERE
     
-    ### END YOUR CODE
+    # ## END YOUR CODE
     
     return cost, gradPred, grad
 
@@ -322,13 +323,13 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, K=10):
     # assignment!                                                     #
     ###################################################################
     
-    ### YOUR CODE HERE
+    # ## YOUR CODE HERE
     
-    ### END YOUR CODE
+    # ## END YOUR CODE
     
     return cost, gradPred, grad
 
-def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors, word2vecCostAndGradient = softmaxCostAndGradient):
+def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors, word2vecCostAndGradient=softmaxCostAndGradient):
     """ Skip-gram model in word2vec """
     ###################################################################
     # Implement the skip-gram model in this function.                 #         
@@ -353,13 +354,13 @@ def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors, 
     # assignment!                                                     #
     ###################################################################
     
-    ### YOUR CODE HERE
+    # ## YOUR CODE HERE
     
-    ### END YOUR CODE
+    # ## END YOUR CODE
     
     return cost, gradIn, gradOut
 
-def cbow(currentWord, C, contextWords, tokens, inputVectors, outputVectors, word2vecCostAndGradient = softmaxCostAndGradient):
+def cbow(currentWord, C, contextWords, tokens, inputVectors, outputVectors, word2vecCostAndGradient=softmaxCostAndGradient):
     """ CBOW model in word2vec """
     ###################################################################
     # Implement the continuous bag-of-words model in this function.   #         
@@ -369,9 +370,9 @@ def cbow(currentWord, C, contextWords, tokens, inputVectors, outputVectors, word
     # assignment!                                                     #
     ###################################################################
     
-    ### YOUR CODE HERE
+    # ## YOUR CODE HERE
     
-    ### END YOUR CODE
+    # ## END YOUR CODE
     
     return cost, gradIn, gradOut
 
@@ -382,30 +383,30 @@ def cbow(currentWord, C, contextWords, tokens, inputVectors, outputVectors, word
 def normalizeRows(x):
     """ Row normalization function """
     
-    ### YOUR CODE HERE
+    # ## YOUR CODE HERE
     
-    ### END YOUR CODE
+    # ## END YOUR CODE
     
     return x
 
 # Test this function
 print "=== For autograder ==="
-print normalizeRows(np.array([[3.0,4.0],[1, 2]]))  # the result should be [[0.6, 0.8], [0.4472, 0.8944]]
+print normalizeRows(np.array([[3.0, 4.0], [1, 2]]))  # the result should be [[0.6, 0.8], [0.4472, 0.8944]]
 
 
 # In[ ]:
 
 # Gradient check!
 
-def word2vec_sgd_wrapper(word2vecModel, tokens, wordVectors, dataset, C, word2vecCostAndGradient = softmaxCostAndGradient):
+def word2vec_sgd_wrapper(word2vecModel, tokens, wordVectors, dataset, C, word2vecCostAndGradient=softmaxCostAndGradient):
     batchsize = 50
     cost = 0.0
     grad = np.zeros(wordVectors.shape)
     N = wordVectors.shape[0]
-    inputVectors = wordVectors[:N/2,:]
-    outputVectors = wordVectors[N/2:,:]
+    inputVectors = wordVectors[:N / 2, :]
+    outputVectors = wordVectors[N / 2:, :]
     for i in xrange(batchsize):
-        C1 = random.randint(1,C)
+        C1 = random.randint(1, C)
         centerword, context = dataset.getRandomContext(C1)
         
         if word2vecModel == skipgram:
@@ -415,15 +416,15 @@ def word2vec_sgd_wrapper(word2vecModel, tokens, wordVectors, dataset, C, word2ve
         
         c, gin, gout = word2vecModel(centerword, C1, context, tokens, inputVectors, outputVectors, word2vecCostAndGradient)
         cost += c / batchsize / denom
-        grad[:N/2, :] += gin / batchsize / denom
-        grad[N/2:, :] += gout / batchsize / denom
+        grad[:N / 2, :] += gin / batchsize / denom
+        grad[N / 2:, :] += gout / batchsize / denom
         
     return cost, grad
 
 random.seed(31415)
 np.random.seed(9265)
-dummy_vectors = normalizeRows(np.random.randn(10,3))
-dummy_tokens = dict([("a",0), ("b",1), ("c",2),("d",3),("e",4)])
+dummy_vectors = normalizeRows(np.random.randn(10, 3))
+dummy_tokens = dict([("a", 0), ("b", 1), ("c", 2), ("d", 3), ("e", 4)])
 print "==== Gradient check for skip-gram ===="
 gradcheck_naive(lambda vec: word2vec_sgd_wrapper(skipgram, dummy_tokens, vec, dataset, 5), dummy_vectors)
 gradcheck_naive(lambda vec: word2vec_sgd_wrapper(skipgram, dummy_tokens, vec, dataset, 5, negSamplingCostAndGradient), dummy_vectors)
@@ -432,10 +433,10 @@ gradcheck_naive(lambda vec: word2vec_sgd_wrapper(cbow, dummy_tokens, vec, datase
 gradcheck_naive(lambda vec: word2vec_sgd_wrapper(cbow, dummy_tokens, vec, dataset, 5, negSamplingCostAndGradient), dummy_vectors)
 
 print "\n=== For autograder ==="
-print skipgram("c", 3, ["a", "b", "e", "d", "b", "c"], dummy_tokens, dummy_vectors[:5,:], dummy_vectors[5:,:])
-print skipgram("c", 1, ["a", "b"], dummy_tokens, dummy_vectors[:5,:], dummy_vectors[5:,:], negSamplingCostAndGradient)
-print cbow("a", 2, ["a", "b", "c", "a"], dummy_tokens, dummy_vectors[:5,:], dummy_vectors[5:,:])
-print cbow("a", 2, ["a", "b", "a", "c"], dummy_tokens, dummy_vectors[:5,:], dummy_vectors[5:,:], negSamplingCostAndGradient)
+print skipgram("c", 3, ["a", "b", "e", "d", "b", "c"], dummy_tokens, dummy_vectors[:5, :], dummy_vectors[5:, :])
+print skipgram("c", 1, ["a", "b"], dummy_tokens, dummy_vectors[:5, :], dummy_vectors[5:, :], negSamplingCostAndGradient)
+print cbow("a", 2, ["a", "b", "c", "a"], dummy_tokens, dummy_vectors[:5, :], dummy_vectors[5:, :])
+print cbow("a", 2, ["a", "b", "a", "c"], dummy_tokens, dummy_vectors[:5, :], dummy_vectors[5:, :], negSamplingCostAndGradient)
 
 
 # In[ ]:
@@ -470,7 +471,7 @@ def save_params(iter, params):
         pickle.dump(params, f)
         pickle.dump(random.getstate(), f)
 
-def sgd(f, x0, step, iterations, postprocessing = None, useSaved = False, PRINT_EVERY=10):
+def sgd(f, x0, step, iterations, postprocessing=None, useSaved=False, PRINT_EVERY=10):
     """ Stochastic Gradient Descent """
     ###################################################################
     # Implement the stochastic gradient descent method in this        #
@@ -512,11 +513,11 @@ def sgd(f, x0, step, iterations, postprocessing = None, useSaved = False, PRINT_
     expcost = None
     
     for iter in xrange(start_iter + 1, iterations + 1):
-        ### YOUR CODE HERE
-        ### Don't forget to apply the postprocessing after every iteration!
-        ### You might want to print the progress every few iterations.
+        # ## YOUR CODE HERE
+        # ## Don't forget to apply the postprocessing after every iteration!
+        # ## You might want to print the progress every few iterations.
         
-        ### END YOUR CODE
+        # ## END YOUR CODE
         
         if iter % SAVE_PARAMS_EVERY == 0 and useSaved:
             save_params(iter, x)
@@ -555,14 +556,14 @@ C = 5
 # Reset the random seed to make sure that everyone gets the same results
 random.seed(31415)
 np.random.seed(9265)
-wordVectors = np.concatenate(((np.random.rand(nWords, dimVectors) - .5) / dimVectors, 
+wordVectors = np.concatenate(((np.random.rand(nWords, dimVectors) - .5) / dimVectors,
                               np.zeros((nWords, dimVectors))), axis=0)
-wordVectors0 = sgd(lambda vec: word2vec_sgd_wrapper(skipgram, tokens, vec, dataset, C, negSamplingCostAndGradient), 
+wordVectors0 = sgd(lambda vec: word2vec_sgd_wrapper(skipgram, tokens, vec, dataset, C, negSamplingCostAndGradient),
                    wordVectors, 0.3, 40000, None, True, PRINT_EVERY=10)
 # sanity check: cost at convergence should be around or below 10
 
 # sum the input and output word vectors
-wordVectors = (wordVectors0[:nWords,:] + wordVectors0[nWords:,:])
+wordVectors = (wordVectors0[:nWords, :] + wordVectors0[nWords:, :])
 
 print "\n=== For autograder ==="
 checkWords = ["the", "a", "an", "movie", "ordinary", "but", "and"]
@@ -576,20 +577,20 @@ print checkVecs
 # Visualize the word vectors you trained
 
 _, wordVectors0, _ = load_saved_params()
-wordVectors = (wordVectors0[:nWords,:] + wordVectors0[nWords:,:])
+wordVectors = (wordVectors0[:nWords, :] + wordVectors0[nWords:, :])
 visualizeWords = ["the", "a", "an", ",", ".", "?", "!", "``", "''", "--", "good", "great", "cool", "brilliant", "wonderful", "well", "amazing", "worth", "sweet", "enjoyable", "boring", "bad", "waste", "dumb", "annoying"]
 visualizeIdx = [tokens[word] for word in visualizeWords]
 visualizeVecs = wordVectors[visualizeIdx, :]
 temp = (visualizeVecs - np.mean(visualizeVecs, axis=0))
 covariance = 1.0 / len(visualizeIdx) * temp.T.dot(temp)
-U,S,V = np.linalg.svd(covariance)
-coord = temp.dot(U[:,0:2]) 
+U, S, V = np.linalg.svd(covariance)
+coord = temp.dot(U[:, 0:2]) 
 
 for i in xrange(len(visualizeWords)):
-    plt.text(coord[i,0], coord[i,1], visualizeWords[i], bbox=dict(facecolor='green', alpha=0.1))
+    plt.text(coord[i, 0], coord[i, 1], visualizeWords[i], bbox=dict(facecolor='green', alpha=0.1))
     
-plt.xlim((np.min(coord[:,0]), np.max(coord[:,0])))
-plt.ylim((np.min(coord[:,1]), np.max(coord[:,1])))
+plt.xlim((np.min(coord[:, 0]), np.max(coord[:, 0])))
+plt.ylim((np.min(coord[:, 1]), np.max(coord[:, 1])))
 
 
 # ## 4. Sentiment Analysis
@@ -624,13 +625,13 @@ def getSentenceFeature(tokens, wordVectors, sentence):
     
     sentVector = np.zeros((wordVectors.shape[1],))
     
-    ### YOUR CODE HERE
+    # ## YOUR CODE HERE
     
-    ### END YOUR CODE
+    # ## END YOUR CODE
     
     return sentVector
 
-def softmaxRegression(features, labels, weights, regularization = 0.0, nopredictions = False):
+def softmaxRegression(features, labels, weights, regularization=0.0, nopredictions=False):
     """ Softmax Regression """
     ###################################################################
     # Implement softmax regression with weight regularization.        #
@@ -656,9 +657,9 @@ def softmaxRegression(features, labels, weights, regularization = 0.0, nopredict
     cost = np.sum(-np.log(prob[range(N), labels])) / N 
     cost += 0.5 * regularization * np.sum(weights ** 2)
     
-    ### YOUR CODE HERE: compute the gradients and predictions
+    # ## YOUR CODE HERE: compute the gradients and predictions
     
-    ### END YOUR CODE
+    # ## END YOUR CODE
     
     if nopredictions:
         return cost, grad
@@ -670,7 +671,7 @@ def precision(y, yhat):
     assert(y.shape == yhat.shape)
     return np.sum(y == yhat) * 100.0 / y.size
 
-def softmax_wrapper(features, labels, weights, regularization = 0.0):
+def softmax_wrapper(features, labels, weights, regularization=0.0):
     cost, grad, _ = softmaxRegression(features, labels, weights, regularization)
     return cost, grad
 
@@ -687,7 +688,7 @@ for i in xrange(10):
     words, dummy_labels[i] = dataset.getRandomTrainSentence()
     dummy_features[i, :] = getSentenceFeature(tokens, wordVectors, words)
 print "==== Gradient check for softmax regression ===="
-gradcheck_naive(lambda weights: softmaxRegression(dummy_features, dummy_labels, weights, 1.0, nopredictions = True), dummy_weights)
+gradcheck_naive(lambda weights: softmaxRegression(dummy_features, dummy_labels, weights, 1.0, nopredictions=True), dummy_weights)
 
 print "\n=== For autograder ==="
 print softmaxRegression(dummy_features, dummy_labels, dummy_weights, 1.0)
@@ -697,11 +698,11 @@ print softmaxRegression(dummy_features, dummy_labels, dummy_weights, 1.0)
 
 # Try different regularizations and pick the best!
 
-### YOUR CODE HERE
+# ## YOUR CODE HERE
 
-regularization = 0.0 # try 0.0, 0.00001, 0.00003, 0.0001, 0.0003, 0.001, 0.003, 0.01 and pick the best
+regularization = 0.0  # try 0.0, 0.00001, 0.00003, 0.0001, 0.0003, 0.001, 0.003, 0.01 and pick the best
 
-### END YOUR CODE
+# ## END YOUR CODE
 
 random.seed(3141)
 np.random.seed(59265)
@@ -738,12 +739,12 @@ print "Dev precision (%%): %f" % precision(devLabels, pred)
 # Write down the best regularization and accuracy you found
 # sanity check: your accuracy should be around or above 30%
 
-### YOUR CODE HERE
+# ## YOUR CODE HERE
 
 BEST_REGULARIZATION = 1
 BEST_ACCURACY = 0.0
 
-### END YOUR CODE
+# ## END YOUR CODE
 
 print "=== For autograder ===\n%g\t%g" % (BEST_REGULARIZATION, BEST_ACCURACY)
 
@@ -775,9 +776,9 @@ print "=== For autograder ===\nTest precision (%%): %f" % precision(testLabels, 
 
 # In[ ]:
 
-### YOUR CODE HERE
+# ## YOUR CODE HERE
 
-### END YOU CODE
+# ## END YOU CODE
 
 
 _, _, pred = softmaxRegression(devFeatures, devLabels, weights)
@@ -785,3 +786,4 @@ print "=== For autograder ===\nDev precision (%%): %f" % precision(devLabels, pr
 _, _, pred = softmaxRegression(testFeatures, testLabels, weights)
 print "Test precision (%%): %f" % precision(testLabels, pred)
 
+'''
