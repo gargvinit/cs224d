@@ -195,17 +195,17 @@ gradcheck_naive(quad, np.random.randn(4, 5))  # 2-D test
 # Set up fake data and parameters for the neural network
 N = 20
 dimensions = [10, 5, 11]
-data = np.random.randn(N, dimensions[0])  # each row will be a datum
-labels = np.zeros((N, dimensions[2]))
+data = np.random.randn( dimensions[0],N)  # each row will be a datum
+labels = np.zeros((dimensions[2],N))
 for i in xrange(N):
-    labels[i, random.randint(0, dimensions[2] - 1)] = 1
+    labels[ random.randint(0, dimensions[2] - 1),i] = 1
 
 params = np.random.randn((dimensions[0] + 1) * dimensions[1] + (dimensions[1] + 1) * dimensions[2],)
 
 
 # In[ ]:
 
-def forward_backward_prop(dataI, labels, params):
+def forward_backward_prop(y0, labels, params):
     """ Forward and backward propagation for a two-layer sigmoidal network """
     ###################################################################
     # Compute the forward propagation and for the cross entropy cost, #
@@ -214,22 +214,18 @@ def forward_backward_prop(dataI, labels, params):
     
     # ## Unpack network parameters (do not modify)
     t = 0
-    W1 = np.reshape(params[t:t + dimensions[0] * dimensions[1]], (dimensions[0], dimensions[1]))
+    W1 = np.reshape(params[t:t + dimensions[0] * dimensions[1]], ( dimensions[1],dimensions[0]))
     t += dimensions[0] * dimensions[1]
-    b1 = np.reshape(params[t:t + dimensions[1]], (1, dimensions[1]))
+    b1 = np.reshape(params[t:t + dimensions[1]], (dimensions[1],1))
     t += dimensions[1]
-    W2 = np.reshape(params[t:t + dimensions[1] * dimensions[2]], (dimensions[1], dimensions[2]))
+    W2 = np.reshape(params[t:t + dimensions[1] * dimensions[2]], (dimensions[2],dimensions[1]))
     t += dimensions[1] * dimensions[2]
-    b2 = np.reshape(params[t:t + dimensions[2]], (1, dimensions[2]))
-    y0 = np.transpose(dataI) 
+    b2 = np.reshape(params[t:t + dimensions[2]], ( dimensions[2],1))
     # ## YOUR CODE HERE: forward propagation
-    W1 = np.transpose(W1)
-    W2 = np.transpose(W2)
-    b1 = np.transpose(b1)
-    b2 = np.transpose(b2)
+    #http://www.willamette.edu/~gorr/classes/cs449/backprop.html
+ 
     N =np.shape(y0)[1]
     ones = np.ones((1,N))
-    labels = np.transpose(labels)
     a1=np.dot(W1,y0 ) + np.dot(b1, ones)
     y1 = sigmoid(a1)
     a2=np.dot(W2,y1 ) + np.dot(b2, ones)
@@ -237,18 +233,11 @@ def forward_backward_prop(dataI, labels, params):
     d2 = y2-labels
     d1=np.multiply(np.dot(np.transpose(W2), d2),sigmoid_grad(a1))
 
-    gradW2 = np.dot(d2, np.transpose(y1))/N
-    gradb2 = np.dot(d2, np.transpose(ones))/N
-    gradW1 = np.dot(d1, np.transpose(y0))/N
-    gradb1 = np.dot(d1, np.transpose(ones))/N
-    
-    cost = sum(sum(np.multiply(labels,-np.log(y2))))
-    
-    print cost
-    gradW2 = np.transpose(gradW2)
-    gradW1 = np.transpose(gradW1)
-    gradb2 = np.transpose(gradb2)
-    gradb1 = np.transpose(gradb1)
+    gradW2 = np.dot(d2, np.transpose(y1))
+    gradb2 = np.dot(d2, np.transpose(ones))
+    gradW1 = np.dot(d1, np.transpose(y0))
+    gradb1 = np.dot(d1, np.transpose(ones))
+    cost =sum(sum(np.multiply(labels,-np.log(y2))))
     grad = np.concatenate((gradW1.flatten(), gradb1.flatten(), gradW2.flatten(), gradb2.flatten()))
     return cost, grad
 
