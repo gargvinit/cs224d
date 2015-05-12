@@ -269,7 +269,9 @@ def getRandomContext(C):
     return tokens[random.randint(0, 4)], [tokens[random.randint(0, 4)] for i in xrange(2 * C)]
 dataset.sampleTokenIdx = dummySampleTokenIdx
 dataset.getRandomContext = getRandomContext
-
+#TODO VINIT IMPLEMENT MULTIPLE WORDS INPUTS AND OUTPUTS
+# SKIP GRAM, CBOW
+#TODO VINIT IMPLEMENT NEGATIVE SAMPLING
 def softmaxCostAndGradient(y1, target, w2):
     """ Softmax cost function for word2vec models """
     ###################################################################
@@ -366,12 +368,16 @@ def cbow(currentWord, C, contextWords, tokens, inputVectors, outputVectors, word
     # free to reference the code you previously wrote for this        #
     # assignment!                                                     #
     ###################################################################
-    nextWordIndex = tokens[contextWords[(C+1)/2]]
-    inputVector =inputVectors[tokens[currentWord]]
-    predicted = np.dot(outputVectors, np.transpose(inputVector))
-    cost, d1, gradOut = word2vecCostAndGradient(inputVector, nextWordIndex,outputVectors)
+    inputVector =np.zeros((np.shape(inputVectors)[1],1))
+    for x in contextWords:
+        inputVector += np.row_stack(inputVectors[tokens[x]])
+    inputVector /= 2*C
+    predicted = np.dot(outputVectors, inputVector)
+    cost, d1, gradOut = word2vecCostAndGradient(inputVector, tokens[currentWord],outputVectors)
+    d1 = d1
     y0 = np.zeros((np.shape(inputVectors)[0],1))
-    y0[tokens[currentWord]][0] = 1.0
+    for cw in contextWords:
+        y0[tokens[cw]][0] += (1.0/(2.0*C))
     grad1 = np.transpose(np.dot(d1, np.transpose(y0)))
     return cost, grad1, gradOut
 
@@ -424,6 +430,7 @@ gradcheck_naive(lambda vec: word2vec_sgd_wrapper(cbow, dummy_tokens, vec, datase
 gradcheck_naive(lambda vec: word2vec_sgd_wrapper(cbow, dummy_tokens, vec, dataset, 5, negSamplingCostAndGradient), dummy_vectors)
 
 print "\n=== For autograder ==="
+# Dummy vectors are for storing input and output vectors and hence 2*V*N total rows where V = 5 and N = 3
 print skipgram("c", 3, ["a", "b", "e", "d", "b", "c"], dummy_tokens, dummy_vectors[:5, :], dummy_vectors[5:, :])
 print skipgram("c", 1, ["a", "b"], dummy_tokens, dummy_vectors[:5, :], dummy_vectors[5:, :], negSamplingCostAndGradient)
 print cbow("a", 2, ["a", "b", "c", "a"], dummy_tokens, dummy_vectors[:5, :], dummy_vectors[5:, :])
@@ -560,6 +567,18 @@ print "\n=== For autograder ==="
 checkWords = ["the", "a", "an", "movie", "ordinary", "but", "and"]
 checkIdx = [tokens[word] for word in checkWords]
 checkVecs = wordVectors[checkIdx, :]
+import math
+
+def dotproduct(v1, v2):
+  return sum((a*b) for a, b in zip(v1, v2))
+
+def length(v):
+  return math.sqrt(dotproduct(v, v))
+
+def angle(v1, v2):
+  return math.cos(dotproduct(v1, v2) / (length(v1) * length(v2)))
+print "cos(an,a) " + str(angle(wordVectors[tokens["an"]],wordVectors[tokens["a"]]))
+print "cos(movie,a) " +str(angle(wordVectors[tokens["movie"]],wordVectors[tokens["a"]]))
 print checkVecs
 
 
