@@ -1,0 +1,265 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html lang="en" dir="ltr">
+<head>
+<title>Backpropagation Algorithm - Ufldl</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="generator" content="MediaWiki 1.16.2" />
+<link rel="shortcut icon" href="/favicon.ico" />
+<link rel="search" type="application/opensearchdescription+xml" href="/wiki/opensearch_desc.php" title="Ufldl (en)" />
+<link rel="alternate" type="application/atom+xml" title="Ufldl Atom feed" href="/wiki/index.php?title=Special:RecentChanges&amp;feed=atom" />
+<link rel="stylesheet" href="/wiki/skins/common/shared.css?270" media="screen" />
+<link rel="stylesheet" href="/wiki/skins/common/commonPrint.css?270" media="print" />
+<link rel="stylesheet" href="/wiki/skins/monobook/main.css?270" media="screen" />
+<!--[if lt IE 5.5000]><link rel="stylesheet" href="/wiki/skins/monobook/IE50Fixes.css?270" media="screen" /><![endif]-->
+<!--[if IE 5.5000]><link rel="stylesheet" href="/wiki/skins/monobook/IE55Fixes.css?270" media="screen" /><![endif]-->
+<!--[if IE 6]><link rel="stylesheet" href="/wiki/skins/monobook/IE60Fixes.css?270" media="screen" /><![endif]-->
+<!--[if IE 7]><link rel="stylesheet" href="/wiki/skins/monobook/IE70Fixes.css?270" media="screen" /><![endif]-->
+<link rel="stylesheet" href="/wiki/index.php?title=MediaWiki:Common.css&amp;usemsgcache=yes&amp;ctype=text%2Fcss&amp;smaxage=18000&amp;action=raw&amp;maxage=18000" />
+<link rel="stylesheet" href="/wiki/index.php?title=MediaWiki:Print.css&amp;usemsgcache=yes&amp;ctype=text%2Fcss&amp;smaxage=18000&amp;action=raw&amp;maxage=18000" media="print" />
+<link rel="stylesheet" href="/wiki/index.php?title=MediaWiki:Monobook.css&amp;usemsgcache=yes&amp;ctype=text%2Fcss&amp;smaxage=18000&amp;action=raw&amp;maxage=18000" />
+<link rel="stylesheet" href="/wiki/index.php?title=-&amp;action=raw&amp;maxage=18000&amp;gen=css" />
+<script>
+var skin="monobook",
+stylepath="/wiki/skins",
+wgUrlProtocols="http\\:\\/\\/|https\\:\\/\\/|ftp\\:\\/\\/|irc\\:\\/\\/|gopher\\:\\/\\/|telnet\\:\\/\\/|nntp\\:\\/\\/|worldwind\\:\\/\\/|mailto\\:|news\\:|svn\\:\\/\\/",
+wgArticlePath="/wiki/index.php/$1",
+wgScriptPath="/wiki",
+wgScriptExtension=".php",
+wgScript="/wiki/index.php",
+wgVariantArticlePath=false,
+wgActionPaths={},
+wgServer="http://ufldl.stanford.edu",
+wgCanonicalNamespace="",
+wgCanonicalSpecialPageName=false,
+wgNamespaceNumber=0,
+wgPageName="Backpropagation_Algorithm",
+wgTitle="Backpropagation Algorithm",
+wgAction="view",
+wgArticleId=13,
+wgIsArticle=true,
+wgUserName=null,
+wgUserGroups=null,
+wgUserLanguage="en",
+wgContentLanguage="en",
+wgBreakFrames=false,
+wgCurRevisionId=2272,
+wgVersion="1.16.2",
+wgEnableAPI=true,
+wgEnableWriteAPI=true,
+wgSeparatorTransformTable=["", ""],
+wgDigitTransformTable=["", ""],
+wgMainPageTitle="Main Page",
+wgFormattedNamespaces={"-2": "Media", "-1": "Special", "0": "", "1": "Talk", "2": "User", "3": "User talk", "4": "Ufldl", "5": "Ufldl talk", "6": "File", "7": "File talk", "8": "MediaWiki", "9": "MediaWiki talk", "10": "Template", "11": "Template talk", "12": "Help", "13": "Help talk", "14": "Category", "15": "Category talk"},
+wgNamespaceIds={"media": -2, "special": -1, "": 0, "talk": 1, "user": 2, "user_talk": 3, "ufldl": 4, "ufldl_talk": 5, "file": 6, "file_talk": 7, "mediawiki": 8, "mediawiki_talk": 9, "template": 10, "template_talk": 11, "help": 12, "help_talk": 13, "category": 14, "category_talk": 15, "image": 6, "image_talk": 7},
+wgSiteName="Ufldl",
+wgCategories=[],
+wgRestrictionEdit=[],
+wgRestrictionMove=[];
+</script><script src="/wiki/skins/common/wikibits.js?270"></script>
+<script src="/wiki/skins/common/ajax.js?270"></script>
+<script src="/wiki/index.php?title=-&amp;action=raw&amp;gen=js&amp;useskin=monobook&amp;270"></script>
+
+</head>
+<body class="mediawiki ltr ns-0 ns-subject page-Backpropagation_Algorithm skin-monobook">
+<div id="globalWrapper">
+<div id="column-content"><div id="content" >
+	<a id="top"></a>
+	
+	<h1 id="firstHeading" class="firstHeading">Backpropagation Algorithm</h1>
+	<div id="bodyContent">
+		<h3 id="siteSub">From Ufldl</h3>
+		<div id="contentSub"></div>
+		<div id="jump-to-nav">Jump to: <a href="#column-one">navigation</a>, <a href="#searchInput">search</a></div>
+		<!-- start content -->
+<p>Suppose we have a fixed training set <img class="tex" alt="\{ (x^{(1)}, y^{(1)}), \ldots, (x^{(m)}, y^{(m)}) \}" src="/wiki/images/math/5/e/c/5ec89e9cf3712d45b80e93258352ea8f.png" /> of <span class="texhtml"><i>m</i></span> training examples. We can train our neural network using batch gradient descent.  In detail, for a single training example <span class="texhtml">(<i>x</i>,<i>y</i>)</span>, we define the cost function with respect to that single example to be:
+</p>
+<dl><dd><img class="tex" alt="&#10;\begin{align}&#10;J(W,b; x,y) = \frac{1}{2} \left\| h_{W,b}(x) - y \right\|^2.&#10;\end{align}&#10;" src="/wiki/images/math/0/2/9/029cdd402b83ee43c7e9a900dccd675a.png" />
+</dd></dl>
+<p>This is a (one-half) squared-error cost function. Given a training set of <span class="texhtml"><i>m</i></span> examples, we then define the overall cost function to be: 
+</p>
+<dl><dd><img class="tex" alt="&#10;\begin{align}&#10;J(W,b)&#10;&amp;= \left[ \frac{1}{m} \sum_{i=1}^m J(W,b;x^{(i)},y^{(i)}) \right]&#10;                       + \frac{\lambda}{2} \sum_{l=1}^{n_l-1} \; \sum_{i=1}^{s_l} \; \sum_{j=1}^{s_{l+1}} \left( W^{(l)}_{ji} \right)^2&#10; \\&#10;&amp;= \left[ \frac{1}{m} \sum_{i=1}^m \left( \frac{1}{2} \left\| h_{W,b}(x^{(i)}) - y^{(i)} \right\|^2 \right) \right]&#10;                       + \frac{\lambda}{2} \sum_{l=1}^{n_l-1} \; \sum_{i=1}^{s_l} \; \sum_{j=1}^{s_{l+1}} \left( W^{(l)}_{ji} \right)^2&#10;\end{align}&#10;" src="/wiki/images/math/4/5/3/4539f5f00edca977011089b902670513.png" />
+</dd></dl>
+<p>The first term in the definition of <span class="texhtml"><i>J</i>(<i>W</i>,<i>b</i>)</span> is an average sum-of-squares error term. The second term is a regularization term (also called a <b>weight decay</b> term) that tends to decrease the magnitude of the weights, and helps prevent overfitting.
+</p><p>[Note: Usually weight decay is not applied to the bias terms <img class="tex" alt="b^{(l)}_i" src="/wiki/images/math/6/e/a/6ea0ff7533b239d7ad97668ee35c259d.png" />, as reflected in our definition for <span class="texhtml"><i>J</i>(<i>W</i>,<i>b</i>)</span>.  Applying weight decay to the bias units usually makes only a small difference to the final network, however.  If you've taken CS229 (Machine Learning) at Stanford or watched the course's videos on YouTube, you may also recognize this weight decay as essentially a variant of the Bayesian regularization method you saw there, where we placed a Gaussian prior on the parameters and did MAP (instead of maximum likelihood) estimation.]
+</p><p>The <b>weight decay parameter</b> <span class="texhtml">&lambda;</span> controls the relative importance of the two terms. Note also the slightly overloaded notation: <span class="texhtml"><i>J</i>(<i>W</i>,<i>b</i>;<i>x</i>,<i>y</i>)</span> is the squared error cost with respect to a single example; <span class="texhtml"><i>J</i>(<i>W</i>,<i>b</i>)</span> is the overall cost function, which includes the weight decay term.
+</p><p>This cost function above is often used both for classification and for regression problems. For classification, we let <span class="texhtml"><i>y</i> = 0</span> or <span class="texhtml">1</span> represent the two class labels (recall that the sigmoid activation function outputs values in <span class="texhtml">[0,1]</span>; if we were using a tanh activation function, we would instead use -1 and +1 to denote the labels).  For regression problems, we first scale our outputs to ensure that they lie in the <span class="texhtml">[0,1]</span> range (or if we were using a tanh activation function, then the <span class="texhtml">[ &minus; 1,1]</span> range).
+</p><p>Our goal is to minimize <span class="texhtml"><i>J</i>(<i>W</i>,<i>b</i>)</span> as a function of <span class="texhtml"><i>W</i></span> and <span class="texhtml"><i>b</i></span>. To train our neural network, we will initialize each parameter <img class="tex" alt="W^{(l)}_{ij}" src="/wiki/images/math/9/1/8/9183f327132cdf5ca9876aa4038f6e2f.png" /> and each <img class="tex" alt="b^{(l)}_i" src="/wiki/images/math/6/e/a/6ea0ff7533b239d7ad97668ee35c259d.png" /> to a small random value near zero (say according to a <span class="texhtml"><i>N</i><i>o</i><i>r</i><i>m</i><i>a</i><i>l</i>(0,&epsilon;<sup>2</sup>)</span> distribution for some small <span class="texhtml">&epsilon;</span>, say <span class="texhtml">0.01</span>), and then apply an optimization algorithm such as batch gradient descent. Since <span class="texhtml"><i>J</i>(<i>W</i>,<i>b</i>)</span> is a non-convex function,
+gradient descent is susceptible to local optima; however, in practice gradient descent
+usually works fairly well. Finally, note that it is important to initialize
+the parameters randomly, rather than to all 0's.  If all the parameters start off
+at identical values, then all the hidden layer units will end up learning the same
+function of the input (more formally, <img class="tex" alt="W^{(1)}_{ij}" src="/wiki/images/math/6/9/b/69b82501f76f6552dfe039cb8676511a.png" /> will be the same for all values of <span class="texhtml"><i>i</i></span>, so that <img class="tex" alt="a^{(2)}_1 = a^{(2)}_2 = a^{(2)}_3 = \ldots" src="/wiki/images/math/0/9/9/0995e9a2d04545cde7f01b9ac4250c01.png" /> for any input <span class="texhtml"><i>x</i></span>). The random initialization serves the purpose of <b>symmetry breaking</b>.
+</p><p>One iteration of gradient descent updates the parameters <span class="texhtml"><i>W</i>,<i>b</i></span> as follows:
+</p>
+<dl><dd><img class="tex" alt="&#10;\begin{align}&#10;W_{ij}^{(l)} &amp;= W_{ij}^{(l)} - \alpha \frac{\partial}{\partial W_{ij}^{(l)}} J(W,b) \\&#10;b_{i}^{(l)} &amp;= b_{i}^{(l)} - \alpha \frac{\partial}{\partial b_{i}^{(l)}} J(W,b)&#10;\end{align}&#10;" src="/wiki/images/math/6/f/e/6fe7c74511cd6d49a4c9cb6de2afdc33.png" />
+</dd></dl>
+<p>where <span class="texhtml">&alpha;</span> is the learning rate.  The key step is computing the partial derivatives above. We will now describe the <b>backpropagation</b> algorithm, which gives an
+efficient way to compute these partial derivatives.
+</p><p>We will first describe how backpropagation can be used to compute <img class="tex" alt="\textstyle \frac{\partial}{\partial W_{ij}^{(l)}} J(W,b; x, y)" src="/wiki/images/math/5/f/b/5fb8e62e296ad365a076617b04d66d03.png" /> and <img class="tex" alt="\textstyle \frac{\partial}{\partial b_{i}^{(l)}} J(W,b; x, y)" src="/wiki/images/math/c/a/4/ca49d387f9ead91008f9688b3880e91b.png" />, the partial derivatives of the cost function <span class="texhtml"><i>J</i>(<i>W</i>,<i>b</i>;<i>x</i>,<i>y</i>)</span> defined with respect to a single example <span class="texhtml">(<i>x</i>,<i>y</i>)</span>. Once we can compute these, we see that the derivative of the overall cost function <span class="texhtml"><i>J</i>(<i>W</i>,<i>b</i>)</span> can be computed as:
+</p>
+<dl><dd><img class="tex" alt="&#10;\begin{align}&#10;\frac{\partial}{\partial W_{ij}^{(l)}} J(W,b) &amp;=&#10;\left[ \frac{1}{m} \sum_{i=1}^m \frac{\partial}{\partial W_{ij}^{(l)}} J(W,b; x^{(i)}, y^{(i)}) \right] + \lambda W_{ij}^{(l)} \\&#10;\frac{\partial}{\partial b_{i}^{(l)}} J(W,b) &amp;=&#10;\frac{1}{m}\sum_{i=1}^m \frac{\partial}{\partial b_{i}^{(l)}} J(W,b; x^{(i)}, y^{(i)})&#10;\end{align}&#10;" src="/wiki/images/math/9/3/3/93367cceb154c392aa7f3e0f5684a495.png" />
+</dd></dl>
+<p>The two lines above differ slightly because weight decay is applied to <span class="texhtml"><i>W</i></span> but not <span class="texhtml"><i>b</i></span>.
+</p><p>The intuition behind the backpropagation algorithm is as follows. Given a training example <span class="texhtml">(<i>x</i>,<i>y</i>)</span>, we will first run a "forward pass" to compute all the activations throughout the network, including the output value of the hypothesis <span class="texhtml"><i>h</i><sub><i>W</i>,<i>b</i></sub>(<i>x</i>)</span>.  Then, for each node <span class="texhtml"><i>i</i></span> in layer <span class="texhtml"><i>l</i></span>, we would like to compute an "error term" <img class="tex" alt="\delta^{(l)}_i" src="/wiki/images/math/1/7/f/17f04626a30c825517a517e06870355c.png" /> that measures how much that node was "responsible" for any errors in our output. For an output node, we can directly measure the difference between the network's activation and the true target value, and use that to define <img class="tex" alt="\delta^{(n_l)}_i" src="/wiki/images/math/a/c/9/ac95960f5ef00c208f5a2c730b5f6dcd.png" /> (where layer <span class="texhtml"><i>n</i><sub><i>l</i></sub></span> is the output layer).  How about hidden units?  For those, we will compute <img class="tex" alt="\delta^{(l)}_i" src="/wiki/images/math/1/7/f/17f04626a30c825517a517e06870355c.png" /> based on a weighted average of the error terms of the nodes that uses <img class="tex" alt="a^{(l)}_i" src="/wiki/images/math/2/f/1/2f12132475b24d761ca573173962be9b.png" /> as an input.  In detail, here is the backpropagation algorithm:
+</p>
+<ol>
+<li>Perform a feedforward pass, computing the activations for layers <span class="texhtml"><i>L</i><sub>2</sub></span>, <span class="texhtml"><i>L</i><sub>3</sub></span>, and so on up to the output layer <img class="tex" alt="L_{n_l}" src="/wiki/images/math/7/6/3/763f726de36c3e92b1ac9b84e9f7f778.png" />.
+<li>For each output unit <span class="texhtml"><i>i</i></span> in layer <span class="texhtml"><i>n</i><sub><i>l</i></sub></span> (the output layer), set
+<dl><dd><img class="tex" alt="&#10;\begin{align}&#10;\delta^{(n_l)}_i&#10;= \frac{\partial}{\partial z^{(n_l)}_i} \;\;&#10;        \frac{1}{2} \left\|y - h_{W,b}(x)\right\|^2 = - (y_i - a^{(n_l)}_i) \cdot f&#39;(z^{(n_l)}_i)&#10;\end{align}&#10;" src="/wiki/images/math/5/7/a/57a203683fc9c009c41ff97c1e1f6f54.png" />
+</dd></dl>
+<li>For <img class="tex" alt="l = n_l-1, n_l-2, n_l-3, \ldots, 2" src="/wiki/images/math/9/8/8/988861db3f04c9f1150b482aca116daa.png" /> 
+<dl><dd>For each node <span class="texhtml"><i>i</i></span> in layer <span class="texhtml"><i>l</i></span>, set
+<dl><dd><img class="tex" alt="&#10;                 \delta^{(l)}_i = \left( \sum_{j=1}^{s_{l+1}} W^{(l)}_{ji} \delta^{(l+1)}_j \right) f&#39;(z^{(l)}_i)&#10;                 " src="/wiki/images/math/2/0/f/20f9979d6a46e7bca83f217bdfead4f0.png" />
+</dd></dl>
+</dd></dl>
+<li>Compute the desired partial derivatives, which are given as: 
+<dl><dd><img class="tex" alt="&#10;\begin{align}&#10;\frac{\partial}{\partial W_{ij}^{(l)}} J(W,b; x, y) &amp;= a^{(l)}_j \delta_i^{(l+1)} \\&#10;\frac{\partial}{\partial b_{i}^{(l)}} J(W,b; x, y) &amp;= \delta_i^{(l+1)}.&#10;\end{align}&#10;" src="/wiki/images/math/2/1/d/21db5874b1c1c14bcb675e9961dac9cb.png" />
+</dd></dl>
+</ol>
+<p>Finally, we can also re-write the algorithm using matrix-vectorial notation. We will use "<img class="tex" alt="\textstyle \bullet" src="/wiki/images/math/9/9/3/9937b108a65d2d09961c23259e819e31.png" />" to denote the element-wise product operator (denoted "<tt>.*</tt>" in Matlab or Octave, and also called the Hadamard product), so that if <img class="tex" alt="\textstyle a = b \bullet c" src="/wiki/images/math/b/1/3/b1362783e5c1d9d1e627ca2a91b04f28.png" />, then <img class="tex" alt="\textstyle a_i = b_ic_i" src="/wiki/images/math/1/4/b/14b4e060883883de874d0ebf1ab758d3.png" />. Similar to how we extended the definition of <img class="tex" alt="\textstyle f(\cdot)" src="/wiki/images/math/0/3/0/0303dd697c0e1b72185d7939f9870784.png" /> to apply element-wise to vectors, we also do the same for <img class="tex" alt="\textstyle f&#39;(\cdot)" src="/wiki/images/math/f/e/d/fedde117b610fc785ad71db67e618ab2.png" /> (so that <img class="tex" alt="\textstyle f&#39;([z_1, z_2, z_3]) =&#10;[f&#39;(z_1),&#10;f&#39;(z_2),&#10;f&#39;(z_3)]" src="/wiki/images/math/c/7/5/c7515c53b59e670ceee277e06c1229cb.png" />).
+</p><p>The algorithm can then be written:
+</p>
+<ol>
+<li>Perform a feedforward pass, computing the activations for layers <img class="tex" alt="\textstyle L_2" src="/wiki/images/math/c/f/7/cf7d186efd913f4fb9ceb939bf5135c4.png" />, <img class="tex" alt="\textstyle L_3" src="/wiki/images/math/d/9/b/d9b949d768ca8bab18830d9efc3fa441.png" />, up to the output layer <img class="tex" alt="\textstyle L_{n_l}" src="/wiki/images/math/2/2/1/221a7296664022427d488fdb9b14b19b.png" />, using the equations defining the forward propagation steps
+<li>For the output layer (layer <img class="tex" alt="\textstyle n_l" src="/wiki/images/math/5/b/7/5b7a0657fdea25f29866c8e1d6e884ac.png" />), set 
+<dl><dd><img class="tex" alt="\begin{align}&#10;\delta^{(n_l)}&#10;= - (y - a^{(n_l)}) \bullet f&#39;(z^{(n_l)})&#10;\end{align}" src="/wiki/images/math/0/e/a/0ea6bda6255f544dca0bfa80d622f382.png" />
+</dd></dl>
+<li>For <img class="tex" alt="\textstyle l = n_l-1, n_l-2, n_l-3, \ldots, 2" src="/wiki/images/math/d/c/5/dc5396666d7679f1dae597dbc1a8ff5d.png" /> 
+<dl><dd>Set
+<dl><dd><img class="tex" alt="\begin{align}&#10;                 \delta^{(l)} = \left((W^{(l)})^T \delta^{(l+1)}\right) \bullet f&#39;(z^{(l)})&#10;                 \end{align}" src="/wiki/images/math/7/d/5/7d5660d4a911ecb84113c436f82b1109.png" />
+</dd></dl>
+</dd></dl>
+<li>Compute the desired partial derivatives: 
+<dl><dd><img class="tex" alt="\begin{align}&#10;\nabla_{W^{(l)}} J(W,b;x,y) &amp;= \delta^{(l+1)} (a^{(l)})^T, \\&#10;\nabla_{b^{(l)}} J(W,b;x,y) &amp;= \delta^{(l+1)}.&#10;\end{align}" src="/wiki/images/math/5/3/9/5391ac390a4e279ac8a543d4d5498ecc.png" />
+</dd></dl>
+</ol>
+<p><br />
+<b>Implementation note:</b> In steps 2 and 3 above, we need to compute <img class="tex" alt="\textstyle f&#39;(z^{(l)}_i)" src="/wiki/images/math/f/7/4/f745dea1a82d8cd64aa6b92466e3bbc5.png" /> for each value of <img class="tex" alt="\textstyle i" src="/wiki/images/math/0/b/3/0b36ee693126b34b58f77dba7ed23987.png" />. Assuming <img class="tex" alt="\textstyle f(z)" src="/wiki/images/math/5/d/1/5d1c55e9d6b297473de425651557d4fc.png" /> is the sigmoid activation function, we would already have <img class="tex" alt="\textstyle a^{(l)}_i" src="/wiki/images/math/c/9/b/c9b144e0a6735fafb01b3615a2a0dc05.png" /> stored away from the forward pass through the network.  Thus, using the expression that we worked out earlier for <img class="tex" alt="\textstyle f&#39;(z)" src="/wiki/images/math/a/5/f/a5f7d3f914f4e383ce51e4998592caee.png" />, 
+we can compute this as <img class="tex" alt="\textstyle f&#39;(z^{(l)}_i) = a^{(l)}_i (1- a^{(l)}_i)" src="/wiki/images/math/d/4/d/d4d5e09ac8e035283671cc03d942f955.png" />.   
+</p><p>Finally, we are ready to describe the full gradient descent algorithm.  In the pseudo-code
+below, <img class="tex" alt="\textstyle \Delta W^{(l)}" src="/wiki/images/math/6/c/6/6c600894179e37800af01a5795be30b8.png" /> is a matrix (of the same dimension as <img class="tex" alt="\textstyle W^{(l)}" src="/wiki/images/math/f/8/f/f8f8834256f511d88fec05e3b27c67b1.png" />), and <img class="tex" alt="\textstyle \Delta b^{(l)}" src="/wiki/images/math/e/5/8/e580f95036a0ccb35019a866cb10191f.png" /> is a vector (of the same dimension as <img class="tex" alt="\textstyle b^{(l)}" src="/wiki/images/math/8/c/2/8c2936afffcaf9eeabf8837d501ddb9d.png" />). Note that in this notation, 
+"<img class="tex" alt="\textstyle \Delta W^{(l)}" src="/wiki/images/math/6/c/6/6c600894179e37800af01a5795be30b8.png" />" is a matrix, and in particular it isn't "<img class="tex" alt="\textstyle \Delta" src="/wiki/images/math/5/2/9/529ca30eb74564461bc8e0e7d7864e95.png" /> times <img class="tex" alt="\textstyle W^{(l)}" src="/wiki/images/math/f/8/f/f8f8834256f511d88fec05e3b27c67b1.png" />." We implement one iteration of batch gradient descent as follows:
+</p>
+<ol>
+<li>Set <img class="tex" alt="\textstyle \Delta W^{(l)}&nbsp;:= 0" src="/wiki/images/math/3/6/5/3650852a6b08d261b08a5f4f324fe3a0.png" />, <img class="tex" alt="\textstyle \Delta b^{(l)}&nbsp;:= 0" src="/wiki/images/math/7/5/b/75bf8778e859c31930f7629fe5eab821.png" /> (matrix/vector of zeros) for all <img class="tex" alt="\textstyle l" src="/wiki/images/math/b/a/0/ba0593b3db2fa8535b077516f4b0d70b.png" />.
+<li>For <img class="tex" alt="\textstyle i = 1" src="/wiki/images/math/2/9/6/2964cb4e8851d521d24364f0d409a51d.png" /> to <img class="tex" alt="\textstyle m" src="/wiki/images/math/2/5/e/25e97e8a905fc2cb05d76cd4872a8567.png" />, 
+<ol type="a">
+<li>Use backpropagation to compute <img class="tex" alt="\textstyle \nabla_{W^{(l)}} J(W,b;x,y)" src="/wiki/images/math/d/2/1/d21ff7e7308c9fd8c428fd926f671a39.png" /> and 
+<img class="tex" alt="\textstyle \nabla_{b^{(l)}} J(W,b;x,y)" src="/wiki/images/math/f/e/d/fed489077fe3753c894638d131c0b442.png" />.
+<li>Set <img class="tex" alt="\textstyle \Delta W^{(l)}&nbsp;:= \Delta W^{(l)} + \nabla_{W^{(l)}} J(W,b;x,y)" src="/wiki/images/math/5/0/b/50bd90d031437ba98debea738afad0a2.png" />. 
+<li>Set <img class="tex" alt="\textstyle \Delta b^{(l)}&nbsp;:= \Delta b^{(l)} + \nabla_{b^{(l)}} J(W,b;x,y)" src="/wiki/images/math/3/a/b/3abc7162b757ceac7bdb8f0c4555fe8e.png" />. 
+</ol>
+<li>Update the parameters:
+<dl><dd><img class="tex" alt="\begin{align}&#10;W^{(l)} &amp;= W^{(l)} - \alpha \left[ \left(\frac{1}{m} \Delta W^{(l)} \right) + \lambda W^{(l)}\right] \\&#10;b^{(l)} &amp;= b^{(l)} - \alpha \left[\frac{1}{m} \Delta b^{(l)}\right]&#10;\end{align}" src="/wiki/images/math/0/f/7/0f7430e97ec4df1bfc56357d1485405f.png" />
+</dd></dl>
+</ol>
+<p>To train our neural network, we can now repeatedly take steps of gradient descent to reduce our cost function <img class="tex" alt="\textstyle J(W,b)" src="/wiki/images/math/8/e/9/8e94ae776ae14b36b3af183726ababb9.png" />.
+</p><p><br />
+</p>
+<div style="text-align: center;font-size:small;background-color: #eeeeee; border-style: solid; border-width: 1px; padding: 5px">
+<p><a href="/wiki/index.php/Neural_Networks" title="Neural Networks">Neural Networks</a> | <strong class="selflink">Backpropagation Algorithm</strong> | <a href="/wiki/index.php/Gradient_checking_and_advanced_optimization" title="Gradient checking and advanced optimization">Gradient checking and advanced optimization</a> | <a href="/wiki/index.php/Autoencoders_and_Sparsity" title="Autoencoders and Sparsity">Autoencoders and Sparsity</a> | <a href="/wiki/index.php/Visualizing_a_Trained_Autoencoder" title="Visualizing a Trained Autoencoder">Visualizing a Trained Autoencoder</a> | <a href="/wiki/index.php/Sparse_Autoencoder_Notation_Summary" title="Sparse Autoencoder Notation Summary">Sparse Autoencoder Notation Summary</a> | <a href="/wiki/index.php/Exercise:Sparse_Autoencoder" title="Exercise:Sparse Autoencoder">Exercise:Sparse Autoencoder</a>
+</p>
+</div>
+<p><br />
+</p>
+<div style="text-align: left;font-size:small;background-color: #eeeeee; border-style: solid; border-width: 1px; padding: 5px">
+<p>Language&nbsp;: <a href="/wiki/index.php/%E5%8F%8D%E5%90%91%E4%BC%A0%E5%AF%BC%E7%AE%97%E6%B3%95" title="反向传导算法">中文</a>
+</p>
+</div>
+
+<!-- 
+NewPP limit report
+Preprocessor node count: 309/1000000
+Post-expand include size: 559/2097152 bytes
+Template argument size: 24/2097152 bytes
+Expensive parser function count: 0/100
+-->
+
+<!-- Saved in parser cache with key wikidb:pcache:idhash:13-0!1!0!!en!2!edit=0 and timestamp 20150512134207 -->
+<div class="printfooter">
+Retrieved from "<a href="http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algorithm">http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algorithm</a>"</div>
+		<div id='catlinks' class='catlinks catlinks-allhidden'></div>		<!-- end content -->
+				<div class="visualClear"></div>
+	</div>
+</div></div>
+<div id="column-one">
+	<div id="p-cactions" class="portlet">
+		<h5>Views</h5>
+		<div class="pBody">
+			<ul>
+				 <li id="ca-nstab-main" class="selected"><a href="/wiki/index.php/Backpropagation_Algorithm" title="View the content page [c]" accesskey="c">Page</a></li>
+				 <li id="ca-talk" class="new"><a href="/wiki/index.php?title=Talk:Backpropagation_Algorithm&amp;action=edit&amp;redlink=1" title="Discussion about the content page [t]" accesskey="t">Discussion</a></li>
+				 <li id="ca-viewsource"><a href="/wiki/index.php?title=Backpropagation_Algorithm&amp;action=edit" title="This page is protected.&#10;You can view its source [e]" accesskey="e">View source</a></li>
+				 <li id="ca-history"><a href="/wiki/index.php?title=Backpropagation_Algorithm&amp;action=history" title="Past revisions of this page [h]" accesskey="h">History</a></li>
+			</ul>
+		</div>
+	</div>
+	<div class="portlet" id="p-personal">
+		<h5>Personal tools</h5>
+		<div class="pBody">
+			<ul>
+				<li id="pt-login"><a href="/wiki/index.php?title=Special:UserLogin&amp;returnto=Backpropagation_Algorithm" title="You are encouraged to log in; however, it is not mandatory [o]" accesskey="o">Log in</a></li>
+			</ul>
+		</div>
+	</div>
+	<div class="portlet" id="p-logo">
+		<a style="background-image: url(/wiki/skins/common/images/dolphin-openclipart.png);" href="/wiki/index.php/Main_Page" title="Visit the main page"></a>
+	</div>
+	<script type="text/javascript"> if (window.isMSIE55) fixalpha(); </script>
+	<div class='generated-sidebar portlet' id='p-ufldl_resources'>
+		<h5>ufldl resources</h5>
+		<div class='pBody'>
+			<ul>
+				<li id="n-UFLDL-Tutorial"><a href="/wiki/index.php/UFLDL_Tutorial">UFLDL Tutorial</a></li>
+				<li id="n-Recommended-Readings"><a href="/wiki/index.php/UFLDL_Recommended_Readings">Recommended Readings</a></li>
+			</ul>
+		</div>
+	</div>
+	<div class='generated-sidebar portlet' id='p-wiki'>
+		<h5>wiki</h5>
+		<div class='pBody'>
+			<ul>
+				<li id="n-mainpage-description"><a href="/wiki/index.php/Main_Page" title="Visit the main page [z]" accesskey="z">Main page</a></li>
+				<li id="n-recentchanges"><a href="/wiki/index.php/Special:RecentChanges" title="The list of recent changes in the wiki [r]" accesskey="r">Recent changes</a></li>
+				<li id="n-randompage"><a href="/wiki/index.php/Special:Random" title="Load a random page [x]" accesskey="x">Random page</a></li>
+				<li id="n-help"><a href="/wiki/index.php/Help:Contents" title="The place to find out">Help</a></li>
+			</ul>
+		</div>
+	</div>
+	<div id="p-search" class="portlet">
+		<h5><label for="searchInput">Search</label></h5>
+		<div id="searchBody" class="pBody">
+			<form action="/wiki/index.php" id="searchform">
+				<input type='hidden' name="title" value="Special:Search"/>
+				<input id="searchInput" title="Search Ufldl" accesskey="f" type="search" name="search" />
+				<input type='submit' name="go" class="searchButton" id="searchGoButton"	value="Go" title="Go to a page with this exact name if exists" />&nbsp;
+				<input type='submit' name="fulltext" class="searchButton" id="mw-searchButton" value="Search" title="Search the pages for this text" />
+			</form>
+		</div>
+	</div>
+	<div class="portlet" id="p-tb">
+		<h5>Toolbox</h5>
+		<div class="pBody">
+			<ul>
+				<li id="t-whatlinkshere"><a href="/wiki/index.php/Special:WhatLinksHere/Backpropagation_Algorithm" title="List of all wiki pages that link here [j]" accesskey="j">What links here</a></li>
+				<li id="t-recentchangeslinked"><a href="/wiki/index.php/Special:RecentChangesLinked/Backpropagation_Algorithm" title="Recent changes in pages linked from this page [k]" accesskey="k">Related changes</a></li>
+<li id="t-specialpages"><a href="/wiki/index.php/Special:SpecialPages" title="List of all special pages [q]" accesskey="q">Special pages</a></li>
+				<li id="t-print"><a href="/wiki/index.php?title=Backpropagation_Algorithm&amp;printable=yes" rel="alternate" title="Printable version of this page [p]" accesskey="p">Printable version</a></li>				<li id="t-permalink"><a href="/wiki/index.php?title=Backpropagation_Algorithm&amp;oldid=2272" title="Permanent link to this revision of the page">Permanent link</a></li>			</ul>
+		</div>
+	</div>
+</div><!-- end of the left (by default at least) column -->
+<div class="visualClear"></div>
+<div id="footer">
+	<div id="f-poweredbyico"><a href="http://www.mediawiki.org/"><img src="/wiki/skins/common/images/poweredby_mediawiki_88x31.png" height="31" width="88" alt="Powered by MediaWiki" /></a></div>
+	<ul id="f-list">
+		<li id="lastmod"> This page was last modified on 7 April 2013, at 12:50.</li>
+		<li id="viewcount">This page has been accessed 107,425 times.</li>
+		<li id="privacy"><a href="/wiki/index.php/Ufldl:Privacy_policy" title="Ufldl:Privacy policy">Privacy policy</a></li>
+		<li id="about"><a href="/wiki/index.php/Ufldl:About" title="Ufldl:About">About Ufldl</a></li>
+		<li id="disclaimer"><a href="/wiki/index.php/Ufldl:General_disclaimer" title="Ufldl:General disclaimer">Disclaimers</a></li>
+	</ul>
+</div>
+</div>
+
+<script>if (window.runOnloadHook) runOnloadHook();</script>
+<!-- Served in 0.089 secs. --></body></html>
