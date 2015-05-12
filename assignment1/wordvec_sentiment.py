@@ -32,7 +32,8 @@ import random
 import numpy as np
 from cs224d.data_utils import *
 import matplotlib.pyplot as plt
-
+import math
+from sklearn.tree._tree import Gini
 # This is a bit of magic to make matplotlib figures appear inline in the notebook
 # rather than in a new window.
 # get_ipython().magic(u'matplotlib inline')
@@ -260,7 +261,7 @@ gradcheck_naive(lambda params: forward_backward_prop(data, labels, params), para
 # Implement your skip-gram and CBOW models here
 
 # Interface to the dataset for negative sampling
-'''dataset = type('dummy', (), {})()
+dataset = type('dummy', (), {})()
 def dummySampleTokenIdx():
     return random.randint(0, 4)
 def getRandomContext(C):
@@ -269,7 +270,7 @@ def getRandomContext(C):
 dataset.sampleTokenIdx = dummySampleTokenIdx
 dataset.getRandomContext = getRandomContext
 
-def softmaxCostAndGradient(predicted, target, outputVectors):
+def softmaxCostAndGradient(y1, target, w2):
     """ Softmax cost function for word2vec models """
     ###################################################################
     # Implement the cost and gradients for one predicted word vector  #
@@ -291,14 +292,16 @@ def softmaxCostAndGradient(predicted, target, outputVectors):
     # free to reference the code you previously wrote for this        #
     # assignment!                                                     #
     ###################################################################
-    
-    # ## YOUR CODE HERE
-    
-    # ## END YOUR CODE
-    
-    return cost, gradPred, grad
+    out = np.dot(w2,y1)
+    y2 = softmaxactual(out)
+    cost = -math.log(y2[target])
+    y2[target] -= 1.0
+    d2= y2
+    grad2 = np.dot(np.row_stack(d2),np.column_stack(y1))
+    d1 = np.dot(np.transpose(w2), np.row_stack(d2))
+    return cost, d1, grad2
 
-def negSamplingCostAndGradient(predicted, target, outputVectors, K=10):
+def negSamplingCostAndGradient(y1, target, w2, K=10):
     """ Negative sampling cost function for word2vec models """
     ###################################################################
     # Implement the cost and gradients for one predicted word vector  #
@@ -311,12 +314,15 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, K=10):
     # free to reference the code you previously wrote for this        #
     # assignment!                                                     #
     ###################################################################
-    
-    # ## YOUR CODE HERE
-    
-    # ## END YOUR CODE
-    
-    return cost, gradPred, grad
+    #TODO Use negative sampling
+    out = np.dot(w2,y1)
+    y2 = softmaxactual(out)
+    cost = -math.log(y2[target])
+    y2[target] -= 1.0
+    d2= y2
+    grad2 = np.dot(np.row_stack(d2),np.column_stack(y1))
+    d1 = np.dot(np.transpose(w2), np.row_stack(d2))
+    return cost, d1, grad2
 
 def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors, word2vecCostAndGradient=softmaxCostAndGradient):
     """ Skip-gram model in word2vec """
@@ -342,12 +348,14 @@ def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors, 
     # free to reference the code you previously wrote for this        #
     # assignment!                                                     #
     ###################################################################
-    
-    # ## YOUR CODE HERE
-    
-    # ## END YOUR CODE
-    
-    return cost, gradIn, gradOut
+    nextWordIndex = tokens[contextWords[(C+1)/2]]
+    inputVector =inputVectors[tokens[currentWord]]
+    predicted = np.dot(outputVectors, np.transpose(inputVector))
+    cost, d1, gradOut = word2vecCostAndGradient(inputVector, nextWordIndex,outputVectors)
+    y0 = np.zeros((np.shape(inputVectors)[0],1))
+    y0[tokens[currentWord]][0] = 1.0
+    grad1 = np.transpose(np.dot(d1, np.transpose(y0)))
+    return cost, grad1, gradOut
 
 def cbow(currentWord, C, contextWords, tokens, inputVectors, outputVectors, word2vecCostAndGradient=softmaxCostAndGradient):
     """ CBOW model in word2vec """
@@ -358,35 +366,30 @@ def cbow(currentWord, C, contextWords, tokens, inputVectors, outputVectors, word
     # free to reference the code you previously wrote for this        #
     # assignment!                                                     #
     ###################################################################
-    
-    # ## YOUR CODE HERE
-    
-    # ## END YOUR CODE
-    
-    return cost, gradIn, gradOut
+    nextWordIndex = tokens[contextWords[(C+1)/2]]
+    inputVector =inputVectors[tokens[currentWord]]
+    predicted = np.dot(outputVectors, np.transpose(inputVector))
+    cost, d1, gradOut = word2vecCostAndGradient(inputVector, nextWordIndex,outputVectors)
+    y0 = np.zeros((np.shape(inputVectors)[0],1))
+    y0[tokens[currentWord]][0] = 1.0
+    grad1 = np.transpose(np.dot(d1, np.transpose(y0)))
+    return cost, grad1, gradOut
 
-
-# In[ ]:
-
+def sqr(x):
+    return x*x
+def normalizeRowsActual(x): 
+    sumAll = math.sqrt(sum(map(sqr,x)))
+    return x / sumAll
 # Implement a function that normalizes each row of a matrix to have unit length
 def normalizeRows(x):
     """ Row normalization function """
-    
-    # ## YOUR CODE HERE
-    
-    # ## END YOUR CODE
-    
-    return x
+    return np.array(map(normalizeRowsActual, x))
 
 # Test this function
 print "=== For autograder ==="
 print normalizeRows(np.array([[3.0, 4.0], [1, 2]]))  # the result should be [[0.6, 0.8], [0.4472, 0.8944]]
 
-
-# In[ ]:
-
 # Gradient check!
-
 def word2vec_sgd_wrapper(word2vecModel, tokens, wordVectors, dataset, C, word2vecCostAndGradient=softmaxCostAndGradient):
     batchsize = 50
     cost = 0.0
@@ -407,7 +410,6 @@ def word2vec_sgd_wrapper(word2vecModel, tokens, wordVectors, dataset, C, word2ve
         cost += c / batchsize / denom
         grad[:N / 2, :] += gin / batchsize / denom
         grad[N / 2:, :] += gout / batchsize / denom
-        
     return cost, grad
 
 random.seed(31415)
@@ -769,10 +771,9 @@ print "=== For autograder ===\nTest precision (%%): %f" % precision(testLabels, 
 
 # ## END YOU CODE
 
-
+'''
 _, _, pred = softmaxRegression(devFeatures, devLabels, weights)
 print "=== For autograder ===\nDev precision (%%): %f" % precision(devLabels, pred)
 _, _, pred = softmaxRegression(testFeatures, testLabels, weights)
 print "Test precision (%%): %f" % precision(testLabels, pred)
-
 '''
