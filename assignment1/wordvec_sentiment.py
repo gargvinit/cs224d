@@ -316,7 +316,6 @@ def negSamplingCostAndGradient(y1, target, w2, K=10):
     # free to reference the code you previously wrote for this        #
     # assignment!                                                     #
     ###################################################################
-    #TODO Use negative sampling
     indexes = list(set([dataset.sampleTokenIdx() for i in range(K)]))
     if(target in indexes):
         indexes.remove(target)
@@ -325,16 +324,15 @@ def negSamplingCostAndGradient(y1, target, w2, K=10):
     w2sampled[K1] = w2[target]
     for i in range(K1):
         w2sampled[i] = w2[indexes[i]]
-    #w2sampled = w2
     out = np.dot(w2sampled,y1)
     cost =  -math.log(sigmoid(out[K1]))-sum(np.log(sigmoid(-out)))+np.log(sigmoid(-out[K1]))
-    d2 = sigmoid(out)
-    d2[K1] -= 1.0
-    grad2 = np.dot(np.row_stack(d2),np.column_stack(y1))
-    d1 = np.dot(np.transpose(w2sampled), np.row_stack(d2))
+    d2Sampled = sigmoid(out)
+    d2Sampled[K1] -= 1.0
+    grad2 = np.dot(np.row_stack(d2Sampled),np.column_stack(y1))
+    d1 = np.dot(np.transpose(w2sampled), np.row_stack(d2Sampled))
     grad2A = np.zeros((np.shape(w2)[0], np.shape(w2)[1]))
     for i in range(K1):
-        grad2A[indexes[i]] = grad2[i]
+        grad2A[indexes[i]] += grad2[i]
     grad2A[target] = grad2[K1]
     return cost, d1, grad2A
 
