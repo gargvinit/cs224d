@@ -269,9 +269,6 @@ def getRandomContext(C):
     return tokens[random.randint(0, 4)], [tokens[random.randint(0, 4)] for i in xrange(2 * C)]
 dataset.sampleTokenIdx = dummySampleTokenIdx
 dataset.getRandomContext = getRandomContext
-#TODO VINIT IMPLEMENT MULTIPLE WORDS INPUTS AND OUTPUTS
-# SKIP GRAM, CBOW
-#TODO VINIT IMPLEMENT NEGATIVE SAMPLING
 def softmaxCostAndGradient(y1, target, w2):
     """ Softmax cost function for word2vec models """
     ###################################################################
@@ -360,14 +357,24 @@ def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors, 
     # free to reference the code you previously wrote for this        #
     # assignment!                                                     #
     ###################################################################
-    nextWordIndex = tokens[contextWords[(C+1)/2]]
-    inputVector =inputVectors[tokens[currentWord]]
-    predicted = np.dot(outputVectors, np.transpose(inputVector))
-    cost, d1, gradOut = word2vecCostAndGradient(inputVector, nextWordIndex,outputVectors)
+    #TODO VINIT Merge the deltas coming back and apply of them together somehow
+    #Cost should be average
+    # gradOut should be average
+    totalCost = 0.0
+    gradTotal1 = np.zeros((np.shape(inputVectors)[0],np.shape(inputVectors)[1]))
+    gradTotalOut = np.zeros((np.shape(inputVectors)[0],np.shape(inputVectors)[1]))
     y0 = np.zeros((np.shape(inputVectors)[0],1))
     y0[tokens[currentWord]][0] = 1.0
-    grad1 = np.transpose(np.dot(d1, np.transpose(y0)))
-    return cost, grad1, gradOut
+    
+    nextWordIndex = tokens[contextWords[(C+1)/2]]
+    for cw in contextWords:
+        cost, d1, gradOut = word2vecCostAndGradient(inputVectors[tokens[currentWord]], tokens[cw],outputVectors)
+        grad1 = np.transpose(np.dot(d1, np.transpose(y0)))
+        totalCost += cost
+        gradTotal1 += grad1
+        gradTotalOut += gradOut
+    cwz = len(contextWords)
+    return totalCost/cwz, gradTotal1/cwz, gradTotalOut/cwz
 
 def cbow(currentWord, C, contextWords, tokens, inputVectors, outputVectors, word2vecCostAndGradient=softmaxCostAndGradient):
     """ CBOW model in word2vec """
