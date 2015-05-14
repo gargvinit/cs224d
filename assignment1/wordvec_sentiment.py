@@ -366,7 +366,6 @@ def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors, 
     y0 = np.zeros((np.shape(inputVectors)[0],1))
     y0[tokens[currentWord]][0] = 1.0
     
-    nextWordIndex = tokens[contextWords[(C+1)/2]]
     for cw in contextWords:
         cost, d1, gradOut = word2vecCostAndGradient(inputVectors[tokens[currentWord]], tokens[cw],outputVectors)
         grad1 = np.transpose(np.dot(d1, np.transpose(y0)))
@@ -531,7 +530,11 @@ def sgd(f, x0, step, iterations, postprocessing=None, useSaved=False, PRINT_EVER
         # ## YOUR CODE HERE
         # ## Don't forget to apply the postprocessing after every iteration!
         # ## You might want to print the progress every few iterations.
-        
+        cost, grad = f(x)
+        x -= step*grad
+        #x = postprocessing(x)
+        if iter % PRINT_EVERY == 0 or iter == start_iter +1:
+            print "Iteration: " + str(iter) + ", Cost: " + str(cost)
         # ## END YOUR CODE
         
         if iter % SAVE_PARAMS_EVERY == 0 and useSaved:
@@ -573,8 +576,9 @@ random.seed(31415)
 np.random.seed(9265)
 wordVectors = np.concatenate(((np.random.rand(nWords, dimVectors) - .5) / dimVectors,
                               np.zeros((nWords, dimVectors))), axis=0)
+#Saved should be true and number of iterations should be 40k
 wordVectors0 = sgd(lambda vec: word2vec_sgd_wrapper(skipgram, tokens, vec, dataset, C, negSamplingCostAndGradient),
-                   wordVectors, 0.3, 40000, None, True, PRINT_EVERY=10)
+                   wordVectors, 0.3, 40000, None, True, PRINT_EVERY=100)
 # sanity check: cost at convergence should be around or below 10
 
 # sum the input and output word vectors
