@@ -588,20 +588,7 @@ print "\n=== For autograder ==="
 checkWords = ["the", "a", "an", "movie", "ordinary", "but", "and"]
 checkIdx = [tokens[word] for word in checkWords]
 checkVecs = wordVectors[checkIdx, :]
-import math
-
-def dotproduct(v1, v2):
-  return sum((a*b) for a, b in zip(v1, v2))
-
-def length(v):
-  return math.sqrt(dotproduct(v, v))
-
-def angle(v1, v2):
-  return math.cos(dotproduct(v1, v2) / (length(v1) * length(v2)))
-print "cos(an,a) " + str(angle(wordVectors[tokens["an"]],wordVectors[tokens["a"]]))
-print "cos(movie,a) " +str(angle(wordVectors[tokens["movie"]],wordVectors[tokens["a"]]))
 print checkVecs
-
 
 # In[ ]:
 
@@ -616,7 +603,24 @@ temp = (visualizeVecs - np.mean(visualizeVecs, axis=0))
 covariance = 1.0 / len(visualizeIdx) * temp.T.dot(temp)
 U, S, V = np.linalg.svd(covariance)
 coord = temp.dot(U[:, 0:2]) 
+'''import math
 
+def dotproduct(v1, v2):
+  return sum((a*b) for a, b in zip(v1, v2))
+
+def length(v):
+  return math.sqrt(dotproduct(v, v))
+
+def angle(v1, v2):
+  return math.cos(dotproduct(v1, v2) / (length(v1) * length(v2)))
+def dis(v1, v2):
+    return math.sqrt(sum ((a-b)*(a-b) for a,b in zip(v1,v2)))
+print "dis(good,great) " +str(dis(wordVectors[tokens["good"]],wordVectors[tokens["great"]]))
+print "dis(the,great) " +str(dis(wordVectors[tokens["the"]],wordVectors[tokens["great"]]))
+print "dis(the,a) " +str(dis(wordVectors[tokens["the"]],wordVectors[tokens["a"]]))
+print "dis(the,?) " +str(dis(wordVectors[tokens["the"]],wordVectors[tokens["?"]]))
+print "dis(brilliant,wonderful) " +str(dis(wordVectors[tokens["brilliant"]],wordVectors[tokens["wonderful"]]))
+print "dis(brilliant,--) " +str(dis(wordVectors[tokens["brilliant"]],wordVectors[tokens["--"]]))'''
 for i in xrange(len(visualizeWords)):
     plt.text(coord[i, 0], coord[i, 1], visualizeWords[i], bbox=dict(facecolor='green', alpha=0.1))
     
@@ -628,13 +632,16 @@ plt.ylim((np.min(coord[:, 1]), np.max(coord[:, 1])))
 # 
 # Now, with the word vectors you trained, we are going to perform a simple sentiment analysis.
 # 
-# For each sentence in the Stanford Sentiment Treebank dataset, we are going to use the average of all the word vectors in that sentence as its feature, and try to predict the sentiment level of the said sentence. The sentiment level of the phrases are represented as real values in the original dataset, here we'll just use five classes:
+# For each sentence in the Stanford Sentiment Treebank dataset, we are going to use the average of all the word vectors in
+# that sentence as its feature, and try to predict the sentiment level of the said sentence. The sentiment level of the
+# phrases are represented as real values in the original dataset, here we'll just use five classes:
 # 
 #     "very negative", "negative", "neutral", "positive", "very positive"
 #     
 # which are represented by 0 to 4 in the code, respectively.
 # 
-# For this part, you will learn to train a softmax regressor with SGD, and perform train/dev validation to improve generalization of your regressor.
+# For this part, you will learn to train a softmax regressor with SGD, and perform train/dev validation to improve 
+# generalization of your regressor.
 
 # In[ ]:
 
@@ -655,10 +662,9 @@ def getSentenceFeature(tokens, wordVectors, sentence):
     ###################################################################
     
     sentVector = np.zeros((wordVectors.shape[1],))
-    
-    # ## YOUR CODE HERE
-    
-    # ## END YOUR CODE
+    for word in sentence:
+        sentVector += wordVectors[tokens[word]]
+    sentVector /= len(sentence)
     
     return sentVector
 
@@ -685,13 +691,15 @@ def softmaxRegression(features, labels, weights, regularization=0.0, nopredictio
     else:
         N = 1
     # A vectorized implementation of    1/N * sum(cross_entropy(x_i, y_i)) + 1/2*|w|^2
-    cost = np.sum(-np.log(prob[range(N), labels])) / N 
+    pred =  np.argmax(prob,axis=1)
+    cost = 0.0
+    for i in range(len(labels)):
+        if(prob[i][labels[i]] !=0):
+            cost += -np.log(prob[i][labels[i]])
+        prob[i][labels[i]] -= 1.0
     cost += 0.5 * regularization * np.sum(weights ** 2)
     
-    # ## YOUR CODE HERE: compute the gradients and predictions
-    
-    # ## END YOUR CODE
-    
+    grad = np.dot(np.transpose(features), prob) +regularization *weights
     if nopredictions:
         return cost, grad
     else:
@@ -729,41 +737,46 @@ print softmaxRegression(dummy_features, dummy_labels, dummy_weights, 1.0)
 
 # Try different regularizations and pick the best!
 
-# ## YOUR CODE HERE
+regularizations =[ 0.0, 0.00001, 0.00003, 0.0001, 0.0003, 0.001, 0.003, 0.01]
+weights = ""
+prec = 0.0
+bRegularization=0.0
+for regularization in regularizations:
 
-regularization = 0.0  # try 0.0, 0.00001, 0.00003, 0.0001, 0.0003, 0.001, 0.003, 0.01 and pick the best
-
-# ## END YOUR CODE
-
-random.seed(3141)
-np.random.seed(59265)
-weights = np.random.randn(dimVectors, 5)
-
-trainset = dataset.getTrainSentences()
-nTrain = len(trainset)
-trainFeatures = np.zeros((nTrain, dimVectors))
-trainLabels = np.zeros((nTrain,), dtype=np.int32)
-
-for i in xrange(nTrain):
-    words, trainLabels[i] = trainset[i]
-    trainFeatures[i, :] = getSentenceFeature(tokens, wordVectors, words)
+    random.seed(3141)
+    np.random.seed(59265)
+    cWeights = np.random.randn(dimVectors, 5)
     
-# We will do batch optimization
-weights = sgd(lambda weights: softmax_wrapper(trainFeatures, trainLabels, weights, regularization), weights, 3.0, 10000, PRINT_EVERY=100)
-
-# Prepare dev set features
-devset = dataset.getDevSentences()
-nDev = len(devset)
-devFeatures = np.zeros((nDev, dimVectors))
-devLabels = np.zeros((nDev,), dtype=np.int32)
-
-for i in xrange(nDev):
-    words, devLabels[i] = devset[i]
-    devFeatures[i, :] = getSentenceFeature(tokens, wordVectors, words)
+    trainset = dataset.getTrainSentences()
+    nTrain = len(trainset)
+    trainFeatures = np.zeros((nTrain, dimVectors))
+    trainLabels = np.zeros((nTrain,), dtype=np.int32)
     
-_, _, pred = softmaxRegression(devFeatures, devLabels, weights)
-print "Dev precision (%%): %f" % precision(devLabels, pred)
-
+    for i in xrange(nTrain):
+        words, trainLabels[i] = trainset[i]
+        trainFeatures[i, :] = getSentenceFeature(tokens, wordVectors, words)
+        
+    # We will do batch optimization
+    cWeights = sgd(lambda weights: softmax_wrapper(trainFeatures, trainLabels, cWeights, regularization), cWeights, 3.0, 10000, PRINT_EVERY=100)
+    
+    # Prepare dev set features
+    devset = dataset.getDevSentences()
+    nDev = len(devset)
+    devFeatures = np.zeros((nDev, dimVectors))
+    devLabels = np.zeros((nDev,), dtype=np.int32)
+    
+    for i in xrange(nDev):
+        words, devLabels[i] = devset[i]
+        devFeatures[i, :] = getSentenceFeature(tokens, wordVectors, words)
+        
+    _, _, pred = softmaxRegression(devFeatures, devLabels, cWeights)
+    cPrecision = precision(devLabels, pred)
+    print "Regularization: " + str(regularization)
+    print "Dev precision (%%): %f" % cPrecision
+    if(prec < precision(devLabels, pred)):
+        prec = cPrecision
+        weights= cWeights
+        bRegularization = regularization
 
 # In[ ]:
 
@@ -772,8 +785,8 @@ print "Dev precision (%%): %f" % precision(devLabels, pred)
 
 # ## YOUR CODE HERE
 
-BEST_REGULARIZATION = 1
-BEST_ACCURACY = 0.0
+BEST_REGULARIZATION = bRegularization
+BEST_ACCURACY = prec
 
 # ## END YOUR CODE
 
