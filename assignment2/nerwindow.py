@@ -63,15 +63,9 @@ class WindowMLP(NNBase):
         NNBase.__init__(self, param_dims, param_dims_sparse)
 
         random.seed(rseed) # be sure to seed this for repeatability!
-        #### YOUR CODE HERE ####
-
-        # any other initialization you need
-
-
-
-        #### END YOUR CODE ####
-
-
+        self.sparams.L = wv.copy() # store own representations
+        self.params.W = random_weight_matrix(*self.params.W.shape)
+        self.params.U = random_weight_matrix(*self.params.U.shape)
 
     def _acc_grads(self, window, label):
         """
@@ -88,17 +82,20 @@ class WindowMLP(NNBase):
         self.grads.U += (your gradient dJ/dU)
         self.sgrads.L[i] = (gradient dJ/dL[i]) # this adds an update for that index
         """
-        #### YOUR CODE HERE ####
-
-        ##
-        # Forward propagation
-
-        ##
-        # Backpropagation
-
-
-
-        #### END YOUR CODE ####
+        xf = []
+        for idx in window:
+            xf.extend( self.sparams.L[idx]) # extract representation
+        tanhX = tanh(self.params.W.dot(xf) + self.params.b1)
+        softmaxP = softmax(self.params.U.dot(tanhX) + self.params.b2)
+        y = make_onehot(label, len(softmaxP))
+        delta2 = softmaxP -y
+        self.grads.U += outer(delta2, tanhX) + self.lreg * self.params.U
+        self.grads.b2 += delta2
+        delta1 = self.params.U.T.dot(delta2)*(1. - tanhX*tanhX)
+        self.grads.W += outer(delta1, xf) + self.lreg * self.params.W
+        self.grads.b1 += delta1
+        #for xw in window:
+            #self.sgrads.L[xw] = self.params.W.T.dot(delta1)/len(window)
 
 
     def predict_proba(self, windows):
@@ -115,12 +112,13 @@ class WindowMLP(NNBase):
         # a list-of-lists
         if not hasattr(windows[0], "__iter__"):
             windows = [windows]
+        #TODO Use windows as transposed
+        xu = [self.sparams.L[idx] for idx in windows]# extract representation
+        xf =reduce(lambda x,y: x.extend(y),xu)
 
-        #### YOUR CODE HERE ####
-
-
-        #### END YOUR CODE ####
-
+        print self.params.W.shape
+        tanhX = tanh(self.params.W.dot(xf) + self.params.b1)
+        softmaxP = softmax(self.params.U.dot(tanhX) + self.params.b2)
         return P # rows are output for each input
 
 
@@ -130,12 +128,8 @@ class WindowMLP(NNBase):
         Returns a list of predicted class indices;
         input is same as to predict_proba
         """
-
-        #### YOUR CODE HERE ####
-
-
-        #### END YOUR CODE ####
-        return c # list of predicted classes
+        P = self.predict_proba(windows)
+        return argmax(P, axis=1)
 
 
     def compute_loss(self, windows, labels):
@@ -144,9 +138,55 @@ class WindowMLP(NNBase):
         windows = same as for predict_proba
         labels = list of class labels, for each row of windows
         """
+      
+        '''if not hasattr(windows[0], "__iter__"):
+            windows = [windows]
+        x = []
+        for window in windows:'''
+        xf = []
+        for idx in windows:
+            xf.extend( self.sparams.L[idx]) # extract representation
+        tanhX = tanh(self.params.W.dot(xf) + self.params.b1)
+        softmaxP = softmax(self.params.U.dot(tanhX) + self.params.b2)
+        J = -1*log(softmaxP[labels]) # cross-entropy loss
+        Jreg = (self.lreg / 2.0) *( sum(self.params.W**2.0)+ sum(self.params.U**2.0))
+        return J + Jreg
+    
+import sys, os
+from numpy import *
+from matplotlib.pyplot import *
+from misc import random_weight_matrix
+random.seed(10)
+print random_weight_matrix(3,5)
+from nerwindow import WindowMLP
+    
+import data_utils.utils as du
+import data_utils.ner as ner
+# Load the starter word vectors
+wv, word_to_num, num_to_word = ner.load_wv('data/ner/vocab.txt',
+                                           'data/ner/wordVectors.txt')
+tagnames = ["O", "LOC", "MISC", "ORG", "PER"]
+num_to_tag = dict(enumerate(tagnames))
+tag_to_num = du.invert_dict(num_to_tag)
 
-        #### YOUR CODE HERE ####
+# Set window size
+windowsize = 3
 
+# Load the training set
+docs = du.load_dataset('data/ner/train')
+X_train, y_train = du.docs_to_windows(docs, word_to_num, tag_to_num,
+                                      wsize=windowsize)
 
-        #### END YOUR CODE ####
-        return J
+# Load the dev set (for tuning hyperparameters)
+docs = du.load_dataset('data/ner/dev')
+X_dev, y_dev = du.docs_to_windows(docs, word_to_num, tag_to_num,
+                                  wsize=windowsize)
+
+# Load the test set (dummy labels only)
+docs = du.load_dataset('data/ner/test.masked')
+X_test, y_test = du.docs_to_windows(docs, word_to_num, tag_to_num,
+                                    wsize=windowsize)
+clf = WindowMLP(wv, windowsize=windowsize, dims=[None, 100, 5],
+                reg=0.001, alpha=0.01)
+clf.grad_check(X_train[0], y_train[0])
+clf.train_sgd( X_train, y_train)
